@@ -42,6 +42,9 @@ defmodule Swoosh.Mailer do
         password: {:system, "SMTP_PASSWORD"},
         tls: :always
 
+  `deliver/2`, `deliver!/2`, and `deliver_many/2` are overridable, you can use it to dynamically
+  alter configuration or to preprocess email before delivery.
+
   ## Examples
 
   Once configured you can use your mailer like this:
@@ -176,6 +179,8 @@ defmodule Swoosh.Mailer do
           end
         end)
       end
+
+      defoverridable deliver: 2, deliver!: 2, deliver_many: 2
     end
   end
 

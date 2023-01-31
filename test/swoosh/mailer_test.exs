@@ -56,6 +56,21 @@ defmodule Swoosh.MailerTest do
     assert {:ok, _} = OtherAdapterMailer.deliver(email, adapter: FakeAdapter)
   end
 
+  test "allow overriding functions", %{valid_email: email} do
+    defmodule OverridenMailer do
+      use Swoosh.Mailer, otp_app: :swoosh, adapter: FakeAdapter
+
+      def deliver(email, config \\ []) do
+        email
+        |> Swoosh.Email.reply_to("peter.parker@example.com")
+        |> super(config)
+      end
+    end
+
+    assert {:ok, {email, _config}} = OverridenMailer.deliver(email)
+    assert email.reply_to == {"", "peter.parker@example.com"}
+  end
+
   test "raise if mailer defined with nonexistent adapter", %{valid_email: email} do
     import ExUnit.CaptureLog
 

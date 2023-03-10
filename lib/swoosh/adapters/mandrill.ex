@@ -61,10 +61,14 @@ defmodule Swoosh.Adapters.Mandrill do
     * `:merge_language` (string) - merge tag language to use when evaluating
       merge tags, and possible values are `mailchimp` or `handlebars`
 
-    * `:merge_vars` (list[map]) - a list of maps of `:rcpt` and `vars` for each
+    * `:merge_vars` (list[map]) - a list of maps of `:rcpt` and `:vars` for each
       recipient, which will override `:global_merge_vars`
 
-    * `:metadata` (map) - a map of up to 10 fields for a user metadata
+    * `:metadata` (map) - a map for a user metadata. Up to 10 fields are indexed
+      and searchable by Mandrill search API.
+
+    * `:recipient_metadata` (list[map]) - a list of maps of `:rcpt` and `:vars` for each
+      recipient, which will override `:metadata`
 
     * `:template_content` (list[map]) - a list of maps of `:name` and
       `:content` to be sent within a template
@@ -140,6 +144,7 @@ defmodule Swoosh.Adapters.Mandrill do
     |> prepare_global_merge_vars(email)
     |> prepare_metadata(email)
     |> prepare_merge_vars(email)
+    |> prepare_recipient_metadata(email)
     |> prepare_merge_language(email)
     |> prepare_custom_headers(email)
   end
@@ -238,6 +243,14 @@ defmodule Swoosh.Adapters.Mandrill do
   end
 
   defp prepare_merge_vars(body, _email), do: body
+
+  defp prepare_recipient_metadata(body, %{
+         provider_options: %{recipient_metadata: recipient_metadata}
+       }) do
+    Map.put(body, :recipient_metadata, recipient_metadata)
+  end
+
+  defp prepare_recipient_metadata(body, _email), do: body
 
   defp prepare_merge_language(body, %{provider_options: %{merge_language: merge_language}}) do
     Map.put(body, :merge_language, merge_language)

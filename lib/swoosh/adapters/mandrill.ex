@@ -61,16 +61,22 @@ defmodule Swoosh.Adapters.Mandrill do
     * `:merge_language` (string) - merge tag language to use when evaluating
       merge tags, and possible values are `mailchimp` or `handlebars`
 
-    * `:merge_vars` (list[map]) - a list of maps of `:rcpt` and `vars` for each
+    * `:merge_vars` (list[map]) - a list of maps of `:rcpt` and `:vars` for each
       recipient, which will override `:global_merge_vars`
 
-    * `:metadata` (map) - a map of up to 10 fields for a user metadata
+    * `:metadata` (map) - a map for a user metadata. Up to 10 fields are indexed
+      and searchable by Mandrill search API.
+
+    * `:recipient_metadata` (list[map]) - a list of maps of `:rcpt` and `:vars` for each
+      recipient, which will override `:metadata`
 
     * `:template_content` (list[map]) - a list of maps of `:name` and
       `:content` to be sent within a template
 
     * `:template_name` (string) - a name of slug of the template belongs to a
       user
+
+    * `:tags` (list[string]) - a list of strings to tag message with.
 
   """
 
@@ -137,10 +143,14 @@ defmodule Swoosh.Adapters.Mandrill do
     |> prepare_bcc(email)
     |> prepare_attachments(email)
     |> prepare_reply_to(email)
-    |> prepare_global_merge_vars(email)
-    |> prepare_metadata(email)
-    |> prepare_merge_vars(email)
-    |> prepare_merge_language(email)
+    |> prepare_raw_options(email, [
+      :global_merge_vars,
+      :metadata,
+      :merge_vars,
+      :recipient_metadata,
+      :merge_language,
+      :tags
+    ])
     |> prepare_custom_headers(email)
   end
 
@@ -225,31 +235,14 @@ defmodule Swoosh.Adapters.Mandrill do
 
   defp set_template_content(body, _email), do: body
 
-  defp prepare_global_merge_vars(body, %{
-         provider_options: %{global_merge_vars: global_merge_vars}
-       }) do
-    Map.put(body, :global_merge_vars, global_merge_vars)
+  defp prepare_raw_options(body, email, options) do
+    Enum.reduce(options, body, fn option, body ->
+      case email do
+        %{provider_options: %{^option => value}} -> Map.put(body, option, value)
+        _no_option -> body
+      end
+    end)
   end
-
-  defp prepare_global_merge_vars(body, _email), do: body
-
-  defp prepare_merge_vars(body, %{provider_options: %{merge_vars: merge_vars}}) do
-    Map.put(body, :merge_vars, merge_vars)
-  end
-
-  defp prepare_merge_vars(body, _email), do: body
-
-  defp prepare_merge_language(body, %{provider_options: %{merge_language: merge_language}}) do
-    Map.put(body, :merge_language, merge_language)
-  end
-
-  defp prepare_merge_language(body, _email), do: body
-
-  defp prepare_metadata(body, %{provider_options: %{metadata: metadata}}) do
-    Map.put(body, :metadata, metadata)
-  end
-
-  defp prepare_metadata(body, _email), do: body
 
   defp prepare_custom_headers(body, %{headers: headers}) when map_size(headers) == 0, do: body
 
